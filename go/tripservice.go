@@ -1,13 +1,10 @@
 package trip
 
 import (
-	"github.com/pkg/errors"
+	"errors"
 )
 
 var session *UserSession
-
-type Trip struct {
-}
 
 type Service struct {
 	tripDAO *Dao
@@ -15,10 +12,7 @@ type Service struct {
 
 func (service *Service) GetTripByUser(user *User) ([]Trip, error) {
 	var trips []Trip
-	friends, err := user.Friends()
-	if err != nil {
-		return trips, err
-	}
+	friends := user.Friends()
 	loggedUser, err := session.GetLoggedUser()
 	if err != nil {
 		return trips, err
@@ -26,13 +20,13 @@ func (service *Service) GetTripByUser(user *User) ([]Trip, error) {
 	var isFriend bool
 	if loggedUser != nil {
 		for _, friend := range friends {
-			if *loggedUser == friend {
+			if loggedUser.id == friend.id {
 				isFriend = true
 				break
 			}
 		}
 		if isFriend {
-			return service.tripDAO.FindTripByUser(user)
+			return service.tripDAO.FindTripsByUser(user)
 		}
 		return trips, err
 	} else {
@@ -40,24 +34,48 @@ func (service *Service) GetTripByUser(user *User) ([]Trip, error) {
 	}
 }
 
-type UserSession struct {
-}
+type UserSession struct{}
 
 func (userSession *UserSession) GetLoggedUser() (*User, error) {
 	return nil, errors.New("UserSession.GetLoggedUser() should not be called in an unit test")
 }
 
 type User struct {
+	id      string
+	friends []User
+	trips   []Trip
 }
 
-func (user *User) Friends() ([]User, error) {
-	var friends []User
-	return friends, nil
+func (user *User) Friends() []User {
+	if user == nil {
+		return nil
+	}
+	return user.friends
 }
 
-type Dao struct {
+func (user *User) AddFriend(friend *User) {
+	if friend != nil {
+		user.friends = append(user.friends, *friend)
+	}
 }
 
-func (dao *Dao) FindTripByUser(user *User) ([]Trip, error) {
+func (user *User) Trips() []Trip {
+	if user == nil {
+		return nil
+	}
+	return user.trips
+}
+
+func (user *User) AddTrip(trip *Trip) {
+	if trip != nil {
+		user.trips = append(user.trips, *trip)
+	}
+}
+
+type Trip struct{}
+
+type Dao struct{}
+
+func (dao *Dao) FindTripsByUser(user *User) ([]Trip, error) {
 	return nil, errors.New("TripDAO should not be invoked on an unit test.")
 }
